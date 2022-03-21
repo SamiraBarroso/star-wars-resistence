@@ -19,20 +19,20 @@ public class StatisticService {
 
     public StatisticsDTO sendStatistics() {
         List<Rebel> rebels = rebelRepository.findAll();
-        int quantityTotal = rebels.size();
-        int quantityOfTraitors = countTraitor(rebels);
-        int quantityOfRebels = quantityTotal - quantityOfTraitors;
+        int quantTotal = rebels.size();
+        int quantTraitors = countTraitor(rebels);
+        int quantRebels = quantTotal - quantTraitors;
 
-        Map<ItemInventory, Double> mapAverage = calculateAverageOfItemsPerRebel(rebels);
+        Map<ItemInventory, Double> mapAverage = averageItemsRebel(rebels);
 
-        int sumLostPoints = countLostPointsBecauseOfTraitors(rebels);
-        Double percentageOfRebels = (double) quantityOfRebels / quantityTotal;
-        Double percentageOfTraitors = (double) quantityOfTraitors / quantityTotal;
+        int sumLostPoints = lostPointsTraitors(rebels);
+        Double percentageRebels = (double) quantRebels / quantTotal;
+        Double percentageTraitors = (double) quantTraitors / quantTotal;
 
         return StatisticsDTO.builder()
                 .averageOfItems(mapAverage)
-                .percentageOfRebels(Double.isNaN(percentageOfRebels) ? 0.0 : percentageOfRebels)
-                .percentageOfTraitors(Double.isNaN(percentageOfTraitors) ? 0.0 : percentageOfTraitors)
+                .percentageOfRebels(Double.isNaN(percentageRebels) ? 0.0 : percentageRebels)
+                .percentageOfTraitors(Double.isNaN(percentageTraitors) ? 0.0 : percentageTraitors)
                 .lostPoints(sumLostPoints)
                 .build();
     }
@@ -41,19 +41,17 @@ public class StatisticService {
         return rebels.stream().filter(Rebel::isTraitor).collect(Collectors.toList()).size();
     }
 
-    private Map<ItemInventory, Double> calculateAverageOfItemsPerRebel(List<Rebel> rebels) {
-
+    private Map<ItemInventory, Double> averageItemsRebel(List<Rebel> rebels) {
         List<Item> items = rebels.stream().filter((rebel -> !rebel.isTraitor()))
                 .map(Rebel::getInventory)
                 .flatMap(List::stream).collect(Collectors.toList());
-
-        Map<ItemInventory, Double> itemInventoryMap = items.stream()
+        Map<ItemInventory, Double> inventory = items.stream()
                 .collect(Collectors.groupingBy(Item::getItem, Collectors.averagingInt(Item::getQuantity)));
 
-        return itemInventoryMap;
+        return inventory;
     }
 
-    private int countLostPointsBecauseOfTraitors(List<Rebel> rebels) {
+    private int lostPointsTraitors(List<Rebel> rebels) {
         int sum = rebels.stream().filter(Rebel::isTraitor)
                 .map(Rebel::getInventory)
                 .flatMap(List::stream).collect(Collectors.toList())
